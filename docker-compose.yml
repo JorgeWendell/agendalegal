@@ -1,0 +1,93 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: agendalegal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agendalegal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-agendalegal}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-agendalegal} -d ${POSTGRES_DB:-agendalegal}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - agendalegal-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    container_name: agendalegal-migrate
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agendalegal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-agendalegal}
+      POSTGRES_HOST: db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-agendalegal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-agendalegal}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - agendalegal-network
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://agenda.adelweb.com.br}
+    container_name: agendalegal-app
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-agendalegal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-agendalegal}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Defina BETTER_AUTH_SECRET no .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://agenda.adelweb.com.br}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://agenda.adelweb.com.br}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - agendalegal-network
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:-proxy}
+      - traefik.http.routers.agendalegal.rule=Host(`${APP_DOMAIN:-agenda.adelweb.com.br}`)
+      - traefik.http.routers.agendalegal.entrypoints=websecure
+      - traefik.http.routers.agendalegal.tls=true
+      - traefik.http.routers.agendalegal.tls.certresolver=letsencrypt
+      - traefik.http.routers.agendalegal.service=agendalegal
+      - traefik.http.services.agendalegal.loadbalancer.server.port=3000
+      - traefik.http.routers.agendalegal-http.rule=Host(`${APP_DOMAIN:-agenda.adelweb.com.br}`)
+      - traefik.http.routers.agendalegal-http.entrypoints=web
+      - traefik.http.routers.agendalegal-http.middlewares=agendalegal-https-redirect
+      - traefik.http.middlewares.agendalegal-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.agendalegal-https-redirect.redirectscheme.permanent=true
+
+networks:
+  agendalegal-network:
+    driver: bridge
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-proxy}
+
+volumes:
+  postgres_data:
