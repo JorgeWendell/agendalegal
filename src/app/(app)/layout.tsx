@@ -10,7 +10,7 @@ export default async function AppLayout({
   const session = await getSession();
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <BrandMark />

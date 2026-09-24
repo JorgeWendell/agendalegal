@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { SiteFooter } from "@/components/layout/site-footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,7 +46,10 @@ export default function RootLayout({
       <body className="h-full min-h-full bg-background font-sans text-foreground">
         <ThemeProvider>
           <TooltipProvider>
-            {children}
+            <div className="flex min-h-full flex-col">
+              <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+              <SiteFooter />
+            </div>
             <Toaster position="top-right" />
           </TooltipProvider>
         </ThemeProvider>

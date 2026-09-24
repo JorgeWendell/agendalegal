@@ -10,7 +10,7 @@ const highlights = [
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative grid min-h-svh lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="relative grid min-h-0 flex-1 lg:grid-cols-[1.05fr_0.95fr]">
       <div className="absolute top-4 right-4 z-20 lg:right-8 lg:top-6">
         <ThemeToggle />
       </div>
@@ -45,7 +45,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           </ul>
         </div>
         <p className="relative z-10 text-xs tracking-wide text-white/40">
-          Diária · Semanal · Mensal
+          © Adel Web 2026
         </p>
       </section>
       <section className="flex items-center justify-center bg-background px-6 py-16 sm:px-10">
